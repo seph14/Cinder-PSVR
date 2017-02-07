@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cinder>
+<block
+	name="PSVR"
+	id="org.libcinder.psvr"
+	author=""
+	license=""
+	summary=""
+	url="https://github.com/cinder/Cinder-VR"
+	git="git://github.com/cinder/Cinder-VR.git"
+	>
+	<supports os="msw"/>
+
+	<includePath>include</includePath>
+    <headerPattern>include/*.h</headerPattern>
+    <source>src/psvrapi.cpp</source>
+	<source>src/psvr.cpp</source>
+	
+	<platform os="msw">
+		<includePath>lib/libusb/headers</includePath>
+		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-1.0.lib</staticLibrary>
+	</platform>
+</block>
+</cinder>

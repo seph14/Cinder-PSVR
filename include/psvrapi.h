@@ -5,6 +5,8 @@
 #include "cinder/app/App.h"
 #include "cinder/Signals.h"
 
+#include "BMI055Integrator.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -67,9 +69,7 @@ namespace PSVRApi{
 	///
 	static int const           PSVR_UNSOLICITED_REPORT(0xA0);
 
-    static int const           PSVR_CONFIGURATION(1);
-    
-    static int PSVR_FRAME = 90;
+    static int const           PSVR_CONFIGURATION(0);
     
 	/// ----------------------------------
 	/// \brief The PSVR_USB_INTERFACE enum
@@ -86,7 +86,7 @@ namespace PSVRApi{
 		HID_CONTROL2  = 8
 	} PSVR_USB_INTERFACE;
 
-	typedef enum {
+    typedef enum : byte{
 		VolumeUp   = 2,
 		VolumeDown = 4,
 		Mute       = 8
@@ -120,28 +120,34 @@ namespace PSVRApi{
 	};
 
 	struct PSVRSensorFrame {
-		byte                  buttons;
-
-		byte                  u_b01;
-
-		byte                  volume;
-
-		byte                  u_b03;
-		byte                  u_b04;
-		byte                  u_b05;
-		byte                  u_b06;
-		byte                  u_b07;
-
+        PSVR_HEADSET_BUTTONS  buttons;
+        byte                  u_b01;
+        byte                  volume;
+        byte                  u_b02[5];
 		byte                  status;
-
-		byte                  u_b09;
-		byte                  u_b10;
-		byte                  u_b11;
-		byte                  u_b12;
-		byte                  u_b13;
-		byte                  u_b14;
-		byte                  u_b15;
-
+        byte                  u_b03[7];
+        //16
+        
+        struct {
+            uint32_t timestamp;
+            struct {
+                int16_t yaw;
+                int16_t pitch;
+                int16_t roll;
+            } gyro;
+            struct {
+                int16_t x;
+                int16_t y;
+                int16_t z;
+            } accel;
+        } data[2];
+        //48
+        
+        byte                  calStatus;
+        byte                  ready;
+        byte                  u_b04[3];
+        
+        /*
 		byte                  timeStampA1;
 		byte                  timeStampA2;
 		byte                  timeStampA3;
@@ -187,35 +193,22 @@ namespace PSVRApi{
 
 		byte                  rawMotionZ_BL;
 		byte                  rawMotionZ_BH;
-
-		byte                  calStatus;
-		byte                  ready;
-
-		byte                  u_b51;
-		byte                  u_b52;
-		byte                  u_b53;
+*/
 
 		byte                  voltageValue;
 		byte                  voltageReference;
+		int16_t               irSensor;
 
-		byte                  irSensorL;
-		byte                  irSensorH;
-
-		byte                  u_b58;
-		byte                  u_b59;
-		byte                  u_b60;
-		byte                  u_b61;
-		byte                  u_b62;
-
+        byte                  u_b05[5];
 		byte                  frameSequence;
+        byte                  u_b06;
 	};
     
 #pragma pack()
 	///
 	/// \brief The PSVRSensorData struct
 	///
-	struct PSVRSensorData
-	{
+	struct PSVRSensorData {
 		bool                      volumeUpPressed;
 		bool                      volumeDownPressed;
 		bool                      mutePressed;
@@ -272,7 +265,7 @@ namespace PSVRApi{
 		int                    volume;
 	};
 
-	class PSVRContext{
+	class PSVRContext {
 
 	public:
         libusb_context *usb = NULL;
@@ -314,12 +307,12 @@ namespace PSVRApi{
         
         std::string            getSerialNumber();
         std::string            getVersion();
-        glm::quat              getRotation();
         
-        ci::signals::Signal<void(bool)> connect;
-        ci::signals::Signal<void(std::string, std::string)> infoReport;
-        ci::signals::Signal<void(void*)> statusReport;
+        ci::signals::Signal<void(bool)>                                            connect;
+        ci::signals::Signal<void(std::string, std::string)>                        infoReport;
+        ci::signals::Signal<void(void*)>                                           statusReport;
         ci::signals::Signal<void(byte reportId, byte result, std::string message)> unsolicitedReport;
+        ci::signals::Signal<void(glm::quat quat, glm::vec3 euler)>                 rotationUpdate;
         
     protected:
 		std::string            serialNumber;
@@ -334,11 +327,14 @@ namespace PSVRApi{
         
         bool SendCommand(PSVRFrame *sendCmd);
         
-        std::shared_ptr<std::thread> thread;
-        bool running = false;
-        void process();
+        std::shared_ptr<std::thread> sensorThread, controlThread;
         
-        void processSensorFrame   (PSVRSensorFrame rawFrame, PSVRSensorData rawData);
+        bool running = false;
+        void sensorProcess();
+        
+        void controllerProcess();
+        
+        void processSensorFrame   (PSVRSensorFrame rawFrame, PSVRSensorData *rawData);
         void processControlFrame  (PSVRFrame frame);
         
         void emitInfoReport       (PSVRFrame frame);
@@ -347,71 +343,4 @@ namespace PSVRApi{
     };
     
     typedef std::shared_ptr<PSVRContext> PSVRContextRef;
-    /*
-	class PSVRCommon{
-	public:
-		bool Open(int productNumber, PSVR_USB_INTERFACE usbInterface);
-		void Close(PSVR_USB_INTERFACE usbInterface);
-	protected:
-		bool SendCommand(PSVRFrame *sendCmd);
-
-		//threading
-		std::shared_ptr<std::thread> thread;
-		bool running = false;
-
-		//usb stuff
-		int last_claimed_interface = -1;
-		libusb_device_handle *usbHdl = NULL;
-	};
-
-	/// ---------------------------
-	/// \brief The Sensor class
-	///
-	class PSVRSensor : public PSVRCommon{
-	public:
-		PSVRSensor();
-		~PSVRSensor();
-		void run();
-
-		ci::signals::Signal<void(bool)> connect;
-	private:
-		void process();
-		void ProcessFrame(PSVRApi::PSVRSensorFrame rawFrame, PSVRApi::PSVRSensorData rawData);
-	};
-
-	/// ------------------------
-	/// \brief The Control class
-	///
-	class PSVRControl : public PSVRCommon{
-	public:
-		PSVRControl();
-		~PSVRControl();
-		void run();
-		bool HeadSetPower(bool OnOff);
-		bool EnableVR(bool WithTracking);
-		bool EnableCinematic();
-		bool SetCinematic(byte distance, byte size, byte brightness, byte micVolume);
-		bool Recenter();
-		bool Shutdown();
-		bool ReadInfo();
-
-		bool EnterVRMode();
-		bool ExitVRMode();
-		bool On(byte id);
-		bool Off(byte id);
-		bool SetHMDLed(PSVR_LEDMASK Mask, byte Value);
-		bool SetHDMLeds(PSVR_LEDMASK Mask, byte ValueA, byte ValueB, byte ValueC, byte ValueD, byte ValueE, byte ValueF, byte ValueG, byte ValueH, byte ValueI);
-
-		ci::signals::Signal<void(bool)> connect;
-		ci::signals::Signal<void(std::string, std::string)> infoReport;
-		ci::signals::Signal<void(void*)> statusReport;
-		ci::signals::Signal<void(byte reportId, byte result, std::string message)> unsolicitedReport;
-
-	private:
-		void process();
-		void emitInfoReport(PSVRFrame frame);
-		void emitStatusReport(PSVRFrame frame);
-		void emitUnsolicitedReport(PSVRFrame frame);
-		void processFrame(PSVRFrame frame);
-	};*/
 }

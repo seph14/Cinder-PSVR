@@ -2,6 +2,7 @@
 #include "cinder/app/App.h"
 #include "cinder/Utilities.h"
 #include <errno.h>
+#include <mutex>
 
 using namespace ci::app;
 using namespace ci;
@@ -10,11 +11,7 @@ using namespace ci;
 #define USB_ENDPOINT_OUT		0x00
 #define compat_err(e) -(errno=libusb_to_errno(e))
 
-
-#define INTERFACES_MASK_TO_CLAIM (\
-(1 << PSVRApi::PSVR_USB_INTERFACE::HID_SENSOR) |\
-(1 << PSVRApi::PSVR_USB_INTERFACE::HID_SENSOR)\
-)
+std::mutex mutex;
 
 static int libusb_to_errno(int result){
 	switch (result) {
@@ -54,9 +51,12 @@ namespace PSVRApi{
     libusb_context *_ctx;
     
 	void debug(std::string content) {
+#if 0
 		app::console() << content << std::endl;
+#endif
 	}
-
+    
+    //ported from libusb-0.1
 	static int usb_bulk_io(libusb_device_handle *dev, int ep, char *bytes, int size, int timeout){
 		int actual_length;
 		int r;
@@ -95,8 +95,8 @@ namespace PSVRApi{
 
 	std::string QByteArray(const char * data, int size) {
 		std::string res = "";
-		for (int i = 0; i < size; i++)
-			res += data[i];
+        for (int i = 0; i < size; i++)
+            if(data[i] != '\0') res += data[i];
 		return res;
 	}
     
@@ -153,9 +153,6 @@ namespace PSVRApi{
         return std::shared_ptr<PSVRContext>(new PSVRContext(device));
     }
     
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRContext::PSVRContext
-	///
 	PSVRContext::PSVRContext( libusb_device* device ){
         
         int i;
@@ -164,7 +161,7 @@ namespace PSVRApi{
         struct libusb_device_descriptor usb_descriptor = {0};
         libusb_get_device_descriptor(device, &usb_descriptor);
         err = libusb_open(device, &usbHdl);
-        if (err == 0){ app::console() << "Error opening PSVR usb port" << std::endl; return; }
+        if (err < 0){ app::console() << "Error opening PSVR usb port" << std::endl; return; }
         
         err = libusb_reset_device(usbHdl);
         if (err < 0){ app::console() << "Cannot reset handler" << std::endl; return; }
@@ -184,12 +181,11 @@ namespace PSVRApi{
         err = libusb_get_config_descriptor(device, PSVR_CONFIGURATION, &config);
         if (LIBUSB_SUCCESS != err) {
             app::console() << "Cannot get config descriptor" << std::endl;
-            //probably wont affect that much
+            return;
         }
         
         for (i = 0; i < config->bNumInterfaces; i++) {
-            int mask = 1 << i;
-            if (INTERFACES_MASK_TO_CLAIM & mask) {
+            if ( i == PSVR_USB_INTERFACE::HID_SENSOR || i == PSVR_USB_INTERFACE::HID_CONTROL ) {
                 std::string name = (i == PSVR_USB_INTERFACE::HID_SENSOR) ? "PSVR_SENSOR" : "PSVR_CONTROL";
                 err = libusb_kernel_driver_active(usbHdl, i);
                 if (err < 0) { app::console() << name << "driver status failed" << std::endl; return; }
@@ -206,7 +202,7 @@ namespace PSVRApi{
                     app::console() << name << " interface claim failed" << std::endl;
                     return;
                 }
-                claimed_interfaces |= mask;
+                app::console() << name << " claimed" << std::endl;
             }
         }
         
@@ -214,30 +210,30 @@ namespace PSVRApi{
         connect.emit(true);
         ReadInfo();
         
+        BMI055Integrator::Init(BMI055Integrator::AScale::AFS_2G, BMI055Integrator::Gscale::GFS_2000DPS);
+        
         running = true;
-        thread  = std::shared_ptr<std::thread>(new std::thread( std::bind( &PSVRContext::process, this ) ));
+        
+        sensorThread  = std::shared_ptr<std::thread>(new std::thread( std::bind( &PSVRContext::sensorProcess,     this ) ));
+        controlThread = std::shared_ptr<std::thread>(new std::thread( std::bind( &PSVRContext::controllerProcess, this ) ));
 	}
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRContext::~PSVRContext
-	///
 	PSVRContext::~PSVRContext(){
         running = false;
+        sensorThread->join();
+        controlThread->join();
         
-        int i = 0;
+        ci::sleep(500);
         
-        while (claimed_interfaces) {
-            int mask = 1 << i;
-            if (claimed_interfaces & mask) {
-                libusb_release_interface(usbHdl, i);
+        libusb_release_interface(usbHdl, PSVR_USB_INTERFACE::HID_SENSOR);
 #if defined(DEBUG)
-                std::string name = (i == PSVR_USB_INTERFACE::HID_SENSOR) ? "PSVR_SENSOR" : "PSVR_CONTROL";
-                app::console() << name << " released" << std::endl;
+        app::console() << "PSVR_CONTROL released" << std::endl;
 #endif
-                claimed_interfaces &= ~mask;
-            }
-            i++;
-        }
+        
+        libusb_release_interface(usbHdl, PSVR_USB_INTERFACE::HID_CONTROL);
+#if defined(DEBUG)
+        app::console() << "PSVR_SENSOR released" << std::endl;
+#endif
         
         if(config != NULL){
             libusb_free_config_descriptor(config);
@@ -259,93 +255,88 @@ namespace PSVRApi{
             app::console() << "LibUsb is freed" << std::endl;
 #endif
         }
-        
-        thread->join();
 	}
-
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRContext::process
-	///        Thread implementation for sensor & control
-	///
-	void PSVRContext::process(){
-		ci::ThreadSetup threadSetup;
-
-		struct PSVRSensorFrame sensorFrame;
-		int    sensorBytesRead = 0;
+    
+    //we cant put control and sensor in one thread - control read seems to be blocking if no update is available
+    void PSVRContext::controllerProcess(){
+        ci::ThreadSetup threadSetup;
         
         struct PSVRFrame controlFrame;
         int    controlBytesRead = 0;
         
-		int sleepTime = 1000 / PSVR_FRAME;
-        
-        ci::sleep(1000);
+        while (running){
+            if (usbHdl != NULL) {
+                // read headset status
+                controlBytesRead = usb_bulk_read(usbHdl, PSVR_EP_CMD_READ, (char *)&controlFrame, sizeof(PSVRFrame), 0);
+                if(controlBytesRead > 0)
+                    processControlFrame(controlFrame);
+            }
+        }
+    }
+
+	void PSVRContext::sensorProcess(){
+		ci::ThreadSetup threadSetup;
+
+		struct PSVRSensorFrame sensorFrame;
+		int    sensorBytesRead = 0;
 
 		while (running){
 			if (usbHdl != NULL) {
                 // read sensor data
                 sensorBytesRead = usb_bulk_read(usbHdl, PSVR_EP_SENSOR, (char *)&sensorFrame, sizeof(PSVRSensorFrame), 0);
                 if(sensorBytesRead > 0){
+                    mutex.lock();
                     PSVRSensorData data;
-                    processSensorFrame(sensorFrame, data);
-                    //TODO: parse gyro sensor data here
-                }
-                // read headset status
-                controlBytesRead = usb_bulk_read(usbHdl, 132, (char *)&controlFrame, sizeof(PSVRFrame), 0);
-                if(controlBytesRead > 0){
-                    processControlFrame(controlFrame);
+                    processSensorFrame(sensorFrame, &data);
+                    //parse sensor data to quat
+                    auto quat  = BMI055Integrator::Parse((void *)&data);
+                    auto euler = BMI055Integrator::ToEuler(&quat);
+                    rotationUpdate.emit(quat, euler);
+                    mutex.unlock();
+                }else{
+                    app::console() << sensorBytesRead << std::endl;
                 }
             }
-            ci::sleep(sleepTime);
 		}
 	}
 
-	void PSVRContext::processSensorFrame(PSVRApi::PSVRSensorFrame rawFrame, PSVRApi::PSVRSensorData rawData){
+	void PSVRContext::processSensorFrame(PSVRApi::PSVRSensorFrame rawFrame, PSVRApi::PSVRSensorData *rawData){
 		// buttons
-		rawData.volumeUpPressed     = rawFrame.buttons & 0x02;
-		rawData.volumeDownPressed   = rawFrame.buttons & 0x04;
-		rawData.mutePressed         = rawFrame.buttons & 0x08;
-
+		rawData->volumeUpPressed     = rawFrame.buttons & 0x02;
+		rawData->volumeDownPressed   = rawFrame.buttons & 0x04;
+		rawData->mutePressed         = rawFrame.buttons & 0x08;
 		// volume
-		rawData.volume = rawFrame.volume;
-
+		rawData->volume              = rawFrame.volume;
 		// status
-		rawData.isWorn              = rawFrame.status & 0x01;
-		rawData.isDisplayActive     = rawFrame.status & 0x02;
-		rawData.isMicMuted          = rawFrame.status & 0x08;
-		rawData.earphonesConnected  = rawFrame.status & 0x10;
-
-		rawData.timeStamp_A     = rawFrame.timeStampA1 | (rawFrame.timeStampA2 << 8) | (rawFrame.timeStampA3 << 16) | (rawFrame.timeStampA3 << 24);
-
-		rawData.rawGyroYaw_A    = rawFrame.rawGyroYaw_AL | (rawFrame.rawGyroYaw_AL << 8);
-		rawData.rawGyroPitch_A  = rawFrame.rawGyroPitch_AL | (rawFrame.rawGyroPitch_AL << 8);
-		rawData.rawGyroRoll_A   = rawFrame.rawGyroRoll_AL | (rawFrame.rawGyroRoll_AL << 8);
-
-		rawData.rawMotionX_A = (rawFrame.rawMotionX_AL | (rawFrame.rawMotionX_AH << 8)) >> 4;
-		rawData.rawMotionY_A = (rawFrame.rawMotionY_AL | (rawFrame.rawMotionY_AH << 8)) >> 4;
-		rawData.rawMotionZ_A = (rawFrame.rawMotionZ_AL | (rawFrame.rawMotionZ_AH << 8)) >> 4;
-
-		rawData.timeStamp_B = rawFrame.timeStamp_B1 | (rawFrame.timeStamp_B2 << 8) | (rawFrame.timeStamp_B3 << 16) | (rawFrame.timeStamp_B4 << 24);
-
-		rawData.rawGyroYaw_B    = rawFrame.rawGyroYaw_BL | (rawFrame.rawGyroYaw_BL << 8);
-		rawData.rawGyroPitch_B  = rawFrame.rawGyroPitch_BL | (rawFrame.rawGyroPitch_BL << 8);
-		rawData.rawGyroRoll_B   = rawFrame.rawGyroRoll_BL | (rawFrame.rawGyroRoll_BL << 8);
-
-		rawData.rawMotionX_B = (rawFrame.rawMotionX_BL | (rawFrame.rawMotionX_BH << 8)) >> 4;
-		rawData.rawMotionY_B = (rawFrame.rawMotionY_BL | (rawFrame.rawMotionY_BH << 8)) >> 4;
-		rawData.rawMotionZ_B = (rawFrame.rawMotionZ_BL | (rawFrame.rawMotionZ_BH << 8)) >> 4;
-
-		rawData.calStatus           = rawFrame.calStatus;
-		rawData.ready               = rawFrame.ready;
-		rawData.voltageValue        = rawFrame.voltageValue;
-		rawData.voltageReference    = rawFrame.voltageReference;
-		rawData.frameSequence       = rawFrame.frameSequence;
+		rawData->isWorn              = rawFrame.status & 0x01;
+		rawData->isDisplayActive     = rawFrame.status & 0x02;
+		rawData->isMicMuted          = rawFrame.status & 0x08;
+		rawData->earphonesConnected  = rawFrame.status & 0x10;
+        //frame 1
+        rawData->timeStamp_A         = rawFrame.data[0].timestamp;
+        rawData->rawGyroYaw_A        = rawFrame.data[0].gyro.yaw;
+        rawData->rawGyroPitch_A      = rawFrame.data[0].gyro.pitch;
+		rawData->rawGyroRoll_A       = rawFrame.data[0].gyro.roll;
+		rawData->rawMotionX_A        = rawFrame.data[0].accel.x;
+		rawData->rawMotionY_A        = rawFrame.data[0].accel.y;
+		rawData->rawMotionZ_A        = rawFrame.data[0].accel.z;
+        //frame 2
+        rawData->timeStamp_B         = rawFrame.data[1].timestamp;
+        rawData->rawGyroYaw_B        = rawFrame.data[1].gyro.yaw;
+        rawData->rawGyroPitch_B      = rawFrame.data[1].gyro.pitch;
+		rawData->rawGyroRoll_B       = rawFrame.data[1].gyro.roll;
+		rawData->rawMotionX_B        = rawFrame.data[1].accel.x;
+        rawData->rawMotionY_B        = rawFrame.data[1].accel.x;
+		rawData->rawMotionZ_B        = rawFrame.data[1].accel.x;
+        //other stuff
+		rawData->calStatus           = rawFrame.calStatus;
+		rawData->ready               = rawFrame.ready;
+		rawData->voltageValue        = rawFrame.voltageValue;
+		rawData->voltageReference    = rawFrame.voltageReference;
+		rawData->frameSequence       = rawFrame.frameSequence;
 	}
 
-    /// -----------------------------------------------------------------------
-	/// \brief PSVRControl::processFrame
-	/// \param frame
-	///
-	void PSVRContext::processControlFrame(PSVRFrame frame){
+    void PSVRContext::processControlFrame(PSVRFrame frame){
 		switch (frame.id){
 		case PSVR_INFO_REPORT:
 			emitInfoReport(frame);
@@ -361,11 +352,6 @@ namespace PSVRApi{
 		}
 	}
     
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::HeadSetPower
-	/// \param OnOff
-	/// \return
-	///
 	bool PSVRContext::turnHeadSetOn(){
         PSVRApi::PSVRFrame OnCmd = { 0x17, 0x00, 0xAA, 4, 1};
     	return SendCommand(&OnCmd);
@@ -376,69 +362,41 @@ namespace PSVRApi{
         return SendCommand(&OffCmd);
     }
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::EnableVR
-	/// \param WithTracking
-	/// \return
-	///
 	bool PSVRContext::enableVRTracking(){
 		PSVRFrame sendCmd = { 0x11, 0x00, 0xAA, 8, 0xFF, 0xFF, 0xFF, 0x00 };
         return SendCommand(&sendCmd);
     }
     
     bool PSVRContext::enableVR(){
-        PSVRFrame sendCmd = { 0x23, 0x00, 0xAA, 4, 0 };
+        PSVRFrame sendCmd = { 0x23, 0x00, 0xAA, 4, 1 };
         return SendCommand(&sendCmd);
     }
     
-    /// -----------------------------------------------------------------------
-	/// \brief PSVRControl::EnableCinematic
-	/// \return
-	///
 	bool PSVRContext::enableCinematicMode(){
 		PSVRFrame sendCmd = { 0x23, 0x00, 0xAA, 4, 0 };
 		return SendCommand(&sendCmd);
 	}
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::SetCinematic
-	/// \param distance
-	/// \param size
-	/// \param brightness
-	/// \param micVolume
-	/// \return
-	///
 	bool PSVRContext::enableCinematicMode(byte distance, byte size, byte brightness, byte micVolume){
 		PSVRFrame Cmd = { 0x21, 0x00, 0xAA, 16, 0xC0, distance, size, 0x14, 0, 0, 0, 0, 0, 0, brightness, micVolume, 0, 0, 0, 0 };
 		return SendCommand(&Cmd);
 	}
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::Recenter
-	/// \return
-	///
 	bool PSVRContext::recenterHeadset(){
-        app::console() << "not implemented" << std::endl;
+        debug("not implemented");
 		return true;
 	}
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::Shutdown
-	/// \return
-	///
 	bool PSVRContext::turnBreakBoxOff(){
 		PSVRFrame Cmd = { 0x13, 0x00, 0xAA, 4, 0 };
 		return SendCommand(&Cmd);
 	}
+    
     bool PSVRContext::turnBreakBoxOn(){
         PSVRFrame Cmd = { 0x13, 0x00, 0xAA, 4, 1 };
         return SendCommand(&Cmd);
     }
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::ReadInfo
-	/// \return
-	///
 	bool PSVRContext::ReadInfo(){
 		PSVRFrame Cmd = { 0x81, 0x00, 0xAA, 8, 0x80 };
 		return SendCommand(&Cmd);
@@ -467,10 +425,6 @@ namespace PSVRApi{
         return SendCommand(&Cmd);
     }
 
-    /// -----------------------------------------------------------------------
-	/// \brief PSVRControl::emitInfoReport
-	/// \param frame
-	///
 	void PSVRContext::emitInfoReport(PSVRFrame frame){
 		std::string firmware;
 		std::string serial;
@@ -479,10 +433,6 @@ namespace PSVRApi{
 		infoReport.emit(firmware, serial);
 	}
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRControl::emitStatusReport
-	/// \param frame
-	///
 	void PSVRContext::emitStatusReport(PSVRFrame frame){
 		stat->isHeadsetOn         = frame.data[0] & (1 << 0);
 		stat->isHeadsetWorn       = frame.data[0] & (1 << 1);
@@ -494,22 +444,13 @@ namespace PSVRApi{
 		statusReport.emit((void *)stat);
 	}
     
-    /// -----------------------------------------------------------------------
-    /// \brief PSVRControl::run
-    ///        Thread implementation for control
-    ///
     void PSVRContext::emitUnsolicitedReport(PSVRFrame frame){
         unsolicitedReport.emit(frame.data[0], frame.data[1], QByteArray((char *)&frame.data[2], 58));
     }
 
-	/// -----------------------------------------------------------------------
-	/// \brief PSVRCommon::SendCommand
-	/// \param Command
-	/// \return
-	///
 	bool PSVRContext::SendCommand(PSVRFrame *sendCmd){
+        if(!usbHdl || !running) return false;
 		int bytesSent;
-		// send command
 		if ((bytesSent = usb_bulk_write(usbHdl, PSVR_EP_CMD_WRITE, (char *)sendCmd, 64, 20)) != sizeof(PSVRFrame))
 			return false;
 		return true;

@@ -7,30 +7,15 @@ namespace psvr {
 	
 	class PSVR {
 	public:
-		PSVR();
+        PSVR( libusb_device* device, bool enableLogging = false );
+        PSVR( bool enableLogging = false );
 
-		static std::shared_ptr<PSVR> create() { return std::shared_ptr<PSVR>(new PSVR()); }
-
-		void turnHeadSetOn();
-		void turnHeadSetOff();
-		void enableVRTracking();
-		void enableVR();
-		void enableCinematicMode();
-		void recenterHeadset();
-		void shutdown();
-
-		bool isHeadsetOn()	     { return stat->isHeadsetOn; }
-		bool isHeadsetWorn()     { return stat->isHeadsetWorn; }
-		bool isCinematic()       { return stat->isCinematic; }
-		bool areHeadphonesUsed() { return stat->areHeadphonesUsed; }
-		bool isMuted()           { return stat->isMuted; }
-		bool isCECUsed()         { return stat->isCECUsed; }
-		int  getVolume()         { return stat->volume; }
-
-		std::shared_ptr<PSVRApi::PSVRContext> psvrRef;
+		static std::shared_ptr<PSVR> create(bool enableLogging) { return std::shared_ptr<PSVR>(new PSVR(enableLogging)); }
+        static std::shared_ptr<PSVR> create(libusb_device* device, bool enableLogging) { return std::shared_ptr<PSVR>(new PSVR(device, enableLogging)); }
+        
+        PSVRApi::PSVRContextRef psvrContext;
 
 	protected:
-		PSVRApi::PSVRStatus *stat;
 		void setInfo(std::string firmware, std::string serial);
 		void setStatus(void *status);
 		void onConnect(bool isConnected);

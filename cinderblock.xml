@@ -9,8 +9,6 @@
 	url="https://github.com/cinder/Cinder-VR"
 	git="git://github.com/cinder/Cinder-VR.git"
 	>
-	<supports os="msw"/>
-
 	<includePath>include</includePath>
     <headerPattern>include/*.h</headerPattern>
     <source>src/psvrapi.cpp</source>
@@ -19,6 +17,10 @@
 	<platform os="msw">
 		<includePath>lib/libusb/headers</includePath>
 		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-1.0.lib</staticLibrary>
+	</platform>
+	<platform os="macosx">
+		<dynamicLibrary>lib/macosx/libusb-1.0.0.dylib</dynamicLibrary>
+		<buildCopy>lib/macosx/libusb-1.0.0.dylib</buildCopy>
 	</platform>
 </block>
 </cinder>

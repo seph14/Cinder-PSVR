@@ -5,71 +5,51 @@ using namespace ci;
 using namespace PSVRApi;
 
 namespace psvr {
-	PSVR::PSVR() {
-		psvrRef = shared_ptr<PSVRContext>(new PSVRContext());
-		PSVRControl *psvrControl = psvrRef->psvrControl;
-		PSVRSensor *psvrSensor = psvrRef->psvrSensor;
+    PSVR::PSVR( libusb_device* device, bool enableLogging ){
+        psvrContext = PSVRContext::create(device);
+        if(psvrContext != NULL && enableLogging){
+            psvrContext->connect.connect	 (std::bind(&PSVR::onConnect,      this, std::placeholders::_1));
+            psvrContext->infoReport.connect	 (std::bind(&PSVR::setInfo,        this, std::placeholders::_1, std::placeholders::_1));
+            psvrContext->statusReport.connect(std::bind(&PSVR::setStatus,      this, std::placeholders::_1));
+            //not sure how to connect this
+            //psvrContext->unsolicitedReport.connect(std::bind(&PSVR::setUnsolicited, this, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1));
+        }
+    }
+    
+    PSVR::PSVR( bool enableLogging ){
+        psvrContext = PSVRContext::initPSVR();
+        if(psvrContext != NULL && enableLogging){
+            psvrContext->connect.connect	 (std::bind(&PSVR::onConnect,      this, std::placeholders::_1));
+            psvrContext->infoReport.connect	 (std::bind(&PSVR::setInfo,        this, std::placeholders::_1, std::placeholders::_1));
+            psvrContext->statusReport.connect(std::bind(&PSVR::setStatus,      this, std::placeholders::_1));
+            //psvrContext->unsolicitedReport.connect(std::bind(&PSVR::setUnsolicited, this, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1));
+        }
+    }
 
-		PSVRApi::PSVRStatus *stat = new PSVRStatus();
-		stat->isHeadsetOn		= false;
-		stat->isHeadsetWorn		= false;
-		stat->isCinematic		= true;
-		stat->areHeadphonesUsed = false;
-		stat->isMuted			= false;
-		stat->isCECUsed			= false;
-		stat->volume			= 0;
-
-		psvrControl->connect.connect		  (std::bind(&PSVR::onConnect,      this, std::placeholders::_1));
-		psvrControl->infoReport.connect		  (std::bind(&PSVR::setInfo,        this, std::placeholders::_1, std::placeholders::_1));
-		psvrControl->statusReport.connect     (std::bind(&PSVR::setStatus,      this, std::placeholders::_1));
-		//psvrControl->unsolicitedReport.connect(std::bind(&PSVR::setUnsolicited, this, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1));
-
-		psvrControl->run();
-		psvrSensor->run();
-	}
-
-	void PSVR::turnHeadSetOn() {
-		psvrRef->psvrControl->HeadSetPower(true);
-	}
-
-	void PSVR::turnHeadSetOff() {
-		psvrRef->psvrControl->HeadSetPower(false);
-	}
-
-	void PSVR::enableVRTracking() {
-		psvrRef->psvrControl->EnableVR(true);
-	}
-
-	void PSVR::enableVR() {
-		psvrRef->psvrControl->EnableVR(false);
-	}
-
-	void PSVR::enableCinematicMode() {
-		psvrRef->psvrControl->EnableCinematic();
-	}
-
-	void PSVR::recenterHeadset() {
-		psvrRef->psvrControl->Recenter();
-	}
-
-	void PSVR::shutdown() {
-		psvrRef->psvrControl->Shutdown();
-	}
-
-	void PSVR::setInfo(std::string firmware, std::string serial){
+    void PSVR::setInfo(std::string firmware, std::string serial){
 		app::console() << "Firmware: " + firmware << ", Serial: " << serial << endl;
-		return;
 	}
 
 	void PSVR::setStatus(void *status) {
-		stat = (PSVRApi::PSVRStatus *)status;
-		return;
+        app::console() << "PSVR status updated" << endl;
+        
+        PSVRStatus *stat = (PSVRStatus*)status;
+        
+        app::console() << "Is Headset On: "         << stat->isHeadsetOn        << endl;
+        app::console() << "Is Headset Worn: "       << stat->isHeadsetWorn      << endl;
+        app::console() << "Is Cinematic Mode: "     << stat->isCinematic        << endl;
+        app::console() << "Are Headphone Used: "    << stat->areHeadphonesUsed  << endl;
+        app::console() << "Is Muted: "              << stat->isMuted            << endl;
+        app::console() << "Is CEC Used: "           << stat->isCECUsed          << endl;
+        app::console() << "Volume: "                << stat->volume             << endl;
 	}
 
 	void PSVR::onConnect(bool isConnected){
 		if (!isConnected){
-			app::console() << "Device is disconnected" << endl;
-		}
+			app::console() << "PSVR is disconnected" << endl;
+        }else{
+            app::console() << "PSVR is connected" << endl;
+        }
 	}
 
 	void PSVR::setUnsolicited(byte reportId, byte result, std::string message) {

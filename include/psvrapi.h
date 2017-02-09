@@ -33,6 +33,7 @@ typedef uint8_t byte;
 /// \brief The PSVRApi namespace
 ///
 namespace PSVRApi{
+    
 	///
 	/// \brief PSVR_VID
 	///
@@ -66,25 +67,29 @@ namespace PSVRApi{
 	///
 	static int const           PSVR_UNSOLICITED_REPORT(0xA0);
 
+    static int const           PSVR_CONFIGURATION(1);
+    
+    static int PSVR_FRAME = 90;
+    
 	/// ----------------------------------
 	/// \brief The PSVR_USB_INTERFACE enum
 	///
 	typedef enum {
-		AUDIO_3D = 0,
+		AUDIO_3D      = 0,
 		AUDIO_CONTROL = 1,
-		AUDIO_MIC = 2,
-		AUDIO_CHAT = 3,
-		HID_SENSOR = 4,
-		HID_CONTROL = 5,
-		VS_H264 = 6,
-		VS_BULK_IN = 7,
-		HID_CONTROL2 = 8
+		AUDIO_MIC     = 2,
+		AUDIO_CHAT    = 3,
+		HID_SENSOR    = 4, //sensor for polling all data
+        HID_CONTROL   = 5, //controller
+		VS_H264       = 6,
+		VS_BULK_IN    = 7,
+		HID_CONTROL2  = 8
 	} PSVR_USB_INTERFACE;
 
 	typedef enum {
-		VolumeUp = 2,
+		VolumeUp   = 2,
 		VolumeDown = 4,
-		Mute = 8
+		Mute       = 8
 	} PSVR_HEADSET_BUTTONS;
 
 	typedef enum : uint16_t {
@@ -100,9 +105,11 @@ namespace PSVRApi{
 		LedI = (1 << 8),
 		All = LedA | LedB | LedC | LedD | LedE | LedF | LedG | LedH | LedI
 	} PSVR_LEDMASK;
-	/// -----------------------------
+	
+    /// -----------------------------
 	/// \brief The PSVRFrame struct
 	///
+    
 #pragma pack(1)
 	struct PSVRFrame {
 		byte                   id;
@@ -202,6 +209,7 @@ namespace PSVRApi{
 
 		byte                  frameSequence;
 	};
+    
 #pragma pack()
 	///
 	/// \brief The PSVRSensorData struct
@@ -264,25 +272,82 @@ namespace PSVRApi{
 		int                    volume;
 	};
 
-	class                      PSVRControl;    // forward declaration
-	class                      PSVRSensor;     // forward declaration
-											   /// ----------------------------
-											   /// \brief The Context class
-											   ///
 	class PSVRContext{
 
 	public:
-		PSVRContext();
+        libusb_context *usb = NULL;
+        
+        PSVRContext( libusb_device* device );
 		~PSVRContext();
+        
+        static std::vector<libusb_device*>   listPSVR();
+        static std::shared_ptr<PSVRContext>  initPSVR();
+        static std::shared_ptr<PSVRContext>  create( libusb_device* device ) { return std::shared_ptr<PSVRContext>(new PSVRContext(device)); }
+        
+        bool turnHeadSetOn();
+        bool turnHeadSetOff();
+        
+        bool setLED(PSVR_LEDMASK mask, byte brightess);
+        bool setLED(PSVR_LEDMASK mask, byte valueA, byte valueB, byte valueC, byte valueD, byte valueE, byte valueF, byte valueG, byte valueH, byte valueI);
 
-		PSVRSensor             *psvrSensor;
-		PSVRControl            *psvrControl;
-
+        bool enableVRTracking();
+        bool enableVR();
+        
+        bool enableCinematicMode();
+        bool enableCinematicMode(byte distance, byte size, byte brightness, byte micVolume);
+        
+        /*not implemented*/
+        bool recenterHeadset();
+        
+        bool turnBreakBoxOff();
+        bool turnBreakBoxOn();
+        
+        bool ReadInfo();
+        
+        bool isHeadsetOn()	     { return stat->isHeadsetOn; }
+        bool isHeadsetWorn()     { return stat->isHeadsetWorn; }
+        bool isCinematic()       { return stat->isCinematic; }
+        bool areHeadphonesUsed() { return stat->areHeadphonesUsed; }
+        bool isMuted()           { return stat->isMuted; }
+        bool isCECUsed()         { return stat->isCECUsed; }
+        int  getVolume()         { return stat->volume; }
+        
+        std::string            getSerialNumber();
+        std::string            getVersion();
+        glm::quat              getRotation();
+        
+        ci::signals::Signal<void(bool)> connect;
+        ci::signals::Signal<void(std::string, std::string)> infoReport;
+        ci::signals::Signal<void(void*)> statusReport;
+        ci::signals::Signal<void(byte reportId, byte result, std::string message)> unsolicitedReport;
+        
+    protected:
 		std::string            serialNumber;
 		unsigned char          minorVersion;
 		unsigned char          majorVersion;
-	};
-
+        
+        PSVRApi::PSVRStatus *stat;
+        
+        libusb_device_handle *usbHdl            = NULL;
+        struct libusb_config_descriptor *config = NULL;
+        uint32_t claimed_interfaces;
+        
+        bool SendCommand(PSVRFrame *sendCmd);
+        
+        std::shared_ptr<std::thread> thread;
+        bool running = false;
+        void process();
+        
+        void processSensorFrame   (PSVRSensorFrame rawFrame, PSVRSensorData rawData);
+        void processControlFrame  (PSVRFrame frame);
+        
+        void emitInfoReport       (PSVRFrame frame);
+        void emitStatusReport     (PSVRFrame frame);
+        void emitUnsolicitedReport(PSVRFrame frame);
+    };
+    
+    typedef std::shared_ptr<PSVRContext> PSVRContextRef;
+    /*
 	class PSVRCommon{
 	public:
 		bool Open(int productNumber, PSVR_USB_INTERFACE usbInterface);
@@ -348,5 +413,5 @@ namespace PSVRApi{
 		void emitStatusReport(PSVRFrame frame);
 		void emitUnsolicitedReport(PSVRFrame frame);
 		void processFrame(PSVRFrame frame);
-	};
+	};*/
 }

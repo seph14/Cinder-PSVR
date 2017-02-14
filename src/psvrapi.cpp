@@ -462,46 +462,8 @@ namespace PSVRApi{
 	}
     
     const ci::quat PSVRContext::fixQuat(glm::quat quat){
-        /*quat = glm::normalize(quat);
-        float tmp = quat.x;
-        quat.x = quat.y;
-        quat.y = tmp;
-        return - quat;*/
-        //auto direction = glm::eulerAngles(quat);
-        //return glm::quat(-quat.y,-quat.x,-quat.z,quat.w);
-        
-        //auto euler = glm::eulerAngles(quat);
-        //return glm::quat(glm::vec3(euler.y,euler.x,euler.z));
-        //quat = glm::inverse(quat);
-        
-        /*auto tmp = glm::eulerAngles(quat);
-        auto mat = glm::eulerAngleX(tmp.y) * glm::eulerAngleY(tmp.x) * glm::eulerAngleZ(tmp.z);
-        return glm::quat_cast(mat);*/
-        
-        glm::quat res = glm::quat();
-        
-        //z and x is flipped
-        /*res.x = quat.y;
-        res.y = - quat.x;
-        res.z = quat.z;
-        res.w = - quat.w;*/
-        
-        /*res.x = quat.y;
-        res.y = quat.x;
-        res.z = - quat.z;
-        res.w = quat.w;*/
-        
-        //Levi-Cevita symbol.
-        
-        /*auto tmp = glm::eulerAngles(quat);
-        auto mat = glm::eulerAngleZ(-tmp.z) * glm::eulerAngleX(- tmp.y) * glm::eulerAngleY(tmp.x);
-        return glm::quat_cast(mat);*/
-        
-        return glm::quat_cast(glm::eulerAngleZ((float)M_PI/2.f)) * quat; //* glm::angleAxis((float)M_PI, vec3(0,0,1));
-        //return glm::inverse(res);
-        
-        //return glm::inverse(glm::quat( quat.y, - quat.x, quat.z, - quat.w));
-        //return quat;
-        //return glm::quat( - quat.y, - quat.x, - quat.z, - quat.w);
+        //cant figure out the math to swap x and y axis in quaternion, doing with euler angles
+        auto tmp = glm::eulerAngles(quat);
+        return glm::normalize(glm::quat_cast(glm::eulerAngleYXZ(-tmp.x, -tmp.y, -tmp.z)));
     }
 };

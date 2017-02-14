@@ -1,8 +1,10 @@
 #include "psvrapi.h"
 #include "cinder/app/App.h"
 #include "cinder/Utilities.h"
+#include "cinder/Log.h"
+
 #include <errno.h>
-#include <mutex>
+//#include <mutex>
 
 using namespace ci::app;
 using namespace ci;
@@ -11,7 +13,10 @@ using namespace ci;
 #define USB_ENDPOINT_OUT		0x00
 #define compat_err(e) -(errno=libusb_to_errno(e))
 
-std::mutex mutex;
+//std::mutex mutex;
+
+int frameCount = 0;
+float lastTimestamp = 0.f;
 
 static int libusb_to_errno(int result){
 	switch (result) {
@@ -50,17 +55,11 @@ namespace PSVRApi{
     
     libusb_context *_ctx;
     
-	void debug(std::string content) {
-#if 0
-		app::console() << content << std::endl;
-#endif
-	}
-    
     //ported from libusb-0.1
 	static int usb_bulk_io(libusb_device_handle *dev, int ep, char *bytes, int size, int timeout){
 		int actual_length;
 		int r;
-		debug("endpoint " + toString(ep) + " size " + toString(size) + " timeout " + toString(timeout));
+		//CI_LOG_V("endpoint " + toString(ep) + " size " + toString(size) + " timeout " + toString(timeout));
 		r = libusb_bulk_transfer(dev, ep & 0xff, (unsigned char *)bytes, size, &actual_length, timeout);
 
 		/* if we timed out but did transfer some data, report as successful short
@@ -76,7 +75,7 @@ namespace PSVRApi{
 			/* libusb-0.1 will strangely fix up a read request from endpoint
 			* 0x01 to be from endpoint 0x81. do the same thing here, but
 			* warn about this silly behaviour. */
-			debug("endpoint %x is missing IN direction bit, fixing");
+			CI_LOG_V("endpoint %x is missing IN direction bit, fixing");
 			ep |= USB_ENDPOINT_IN;
 		}
 		return usb_bulk_io(dev, ep, bytes, size, timeout);
@@ -87,7 +86,7 @@ namespace PSVRApi{
 			/* libusb-0.1 on BSD strangely fix up a write request to endpoint
 			* 0x81 to be to endpoint 0x01. do the same thing here, but
 			* warn about this silly behaviour. */
-			debug("endpoint %x has excessive IN direction bit, fixing");
+			CI_LOG_V("endpoint %x has excessive IN direction bit, fixing");
 			ep &= ~USB_ENDPOINT_IN;
 		}
 		return usb_bulk_io(dev, ep, (char *)bytes, size, timeout);
@@ -106,7 +105,7 @@ namespace PSVRApi{
         int err;
         
         if ((err = libusb_init(&_ctx)) != LIBUSB_SUCCESS ) {
-            app::console() << "Libusb Initialization Failed" << std::endl;
+            CI_LOG_E("Libusb Initialization Failed");
             return res;
         }
         
@@ -116,7 +115,7 @@ namespace PSVRApi{
         
         int cnt = (int)libusb_get_device_list(_ctx, &devs);
         if (cnt < 0) {
-            app::console() << "Error Device scan" << std::endl;
+            CI_LOG_E("Error Device scan");
             return res;
         }
         
@@ -139,13 +138,13 @@ namespace PSVRApi{
         int err;
         
         if ((err = libusb_init(&_ctx)) != LIBUSB_SUCCESS ) {
-            app::console() << "Libusb Initialization Failed" << std::endl;
+            CI_LOG_E("Libusb Initialization Failed");
             return NULL;
         }
         
         auto handle = libusb_open_device_with_vid_pid(_ctx, PSVR_VID, PSVR_PID);
         if (handle == NULL) {
-            app::console() << "PSVR is not found" << std::endl;
+            CI_LOG_E("PSVR is not found");
             return NULL;
         }
         
@@ -161,48 +160,50 @@ namespace PSVRApi{
         struct libusb_device_descriptor usb_descriptor = {0};
         libusb_get_device_descriptor(device, &usb_descriptor);
         err = libusb_open(device, &usbHdl);
-        if (err < 0){ app::console() << "Error opening PSVR usb port" << std::endl; return; }
+        if (err < 0){ CI_LOG_E("Error opening PSVR usb port"); return; }
         
         err = libusb_reset_device(usbHdl);
-        if (err < 0){ app::console() << "Cannot reset handler" << std::endl; return; }
+        if (err < 0){ CI_LOG_E("Cannot reset handler"); return; }
         
 #if defined(DEBUG)
         unsigned char string[256];
         if (usb_descriptor.iManufacturer) {
             err = libusb_get_string_descriptor_ascii(usbHdl, usb_descriptor.iManufacturer, string, sizeof(string));
-            console() << "manufacturer: " << string << std::endl;
+            CI_LOG_V("manufacturer: " << string);
         }
         if (usb_descriptor.iProduct) {
             err = libusb_get_string_descriptor_ascii(usbHdl, usb_descriptor.iProduct, string, sizeof(string));
-            console() << "iproduct: " << string << std::endl;
+            CI_LOG_V("iproduct: " << string);
         }
 #endif
         
         err = libusb_get_config_descriptor(device, PSVR_CONFIGURATION, &config);
         if (LIBUSB_SUCCESS != err) {
-            app::console() << "Cannot get config descriptor" << std::endl;
+            CI_LOG_E("Cannot get config descriptor");
             return;
         }
         
         for (i = 0; i < config->bNumInterfaces; i++) {
             if ( i == PSVR_USB_INTERFACE::HID_SENSOR || i == PSVR_USB_INTERFACE::HID_CONTROL ) {
                 std::string name = (i == PSVR_USB_INTERFACE::HID_SENSOR) ? "PSVR_SENSOR" : "PSVR_CONTROL";
+#if defined(CINDER_LINUX) || defined(CINDER_MAC)
                 err = libusb_kernel_driver_active(usbHdl, i);
-                if (err < 0) { app::console() << name << "driver status failed" << std::endl; return; }
+                if (err < 0) { CI_LOG_E(name << "driver status failed"); return; }
                 if (err == 1) {
-                    app::console() << "Detach kernel driver on " << name << std::endl;
+                    CI_LOG_I("Detach kernel driver on " << name);
                     err = libusb_detach_kernel_driver(usbHdl, i);
                     if (err != LIBUSB_SUCCESS) {
-                        app::console() << name << " detach failed" << std::endl;
+                        CI_LOG_E(name << " detach failed");
                         return;
                     }
                 }
+#endif
                 err = libusb_claim_interface(usbHdl, i);
                 if (err != LIBUSB_SUCCESS) {
-                    app::console() << name << " interface claim failed" << std::endl;
+                    CI_LOG_E(name << " interface claim failed: " << err);
                     return;
                 }
-                app::console() << name << " claimed" << std::endl;
+                CI_LOG_I( name << " claimed" );
             }
         }
         
@@ -220,40 +221,30 @@ namespace PSVRApi{
 
 	PSVRContext::~PSVRContext(){
         running = false;
-        sensorThread->join();
-        controlThread->join();
+        if(sensorThread) sensorThread->join();
+        if(controlThread) controlThread->join();
         
         ci::sleep(500);
         
         libusb_release_interface(usbHdl, PSVR_USB_INTERFACE::HID_SENSOR);
-#if defined(DEBUG)
-        app::console() << "PSVR_CONTROL released" << std::endl;
-#endif
+        CI_LOG_V("PSVR_CONTROL released");
         
         libusb_release_interface(usbHdl, PSVR_USB_INTERFACE::HID_CONTROL);
-#if defined(DEBUG)
-        app::console() << "PSVR_SENSOR released" << std::endl;
-#endif
+        CI_LOG_V("PSVR_SENSOR released");
         
         if(config != NULL){
             libusb_free_config_descriptor(config);
-#if defined(DEBUG)
-            app::console() << "Descriptor is freed" << std::endl;
-#endif
+            CI_LOG_V("Descriptor is freed");
         }
         
         if (usbHdl != NULL) {
             libusb_close(usbHdl);
-#if defined(DEBUG)
-            app::console() << "Device is freed" << std::endl;
-#endif
+            CI_LOG_V("Device is freed");
         }
         
         if (_ctx != NULL) {
             libusb_exit(_ctx);
-#if defined(DEBUG)
-            app::console() << "LibUsb is freed" << std::endl;
-#endif
+            CI_LOG_V("LibUsb is freed");
         }
 	}
     
@@ -280,19 +271,28 @@ namespace PSVRApi{
 		struct PSVRSensorFrame sensorFrame;
 		int    sensorBytesRead = 0;
 
+        lastTimestamp = (float)getElapsedSeconds() + 1.f;
+        
 		while (running){
 			if (usbHdl != NULL) {
                 // read sensor data
                 sensorBytesRead = usb_bulk_read(usbHdl, PSVR_EP_SENSOR, (char *)&sensorFrame, sizeof(PSVRSensorFrame), 0);
                 if(sensorBytesRead > 0){
-                    mutex.lock();
+                    //mutex.lock();
                     PSVRSensorData data;
                     processSensorFrame(sensorFrame, &data);
                     //parse sensor data to quat
-                    auto quat  = BMI055Integrator::Parse((void *)&data);
+                    auto quat  = fixQuat(BMI055Integrator::Parse((void *)&data));
                     auto euler = BMI055Integrator::ToEuler(&quat);
+                    //quat = glm::quat_cast(glm::eulerAngleX(euler.y) * glm::eulerAngleY(euler.x) * glm::eulerAngleZ(euler.z));
                     rotationUpdate.emit(quat, euler);
-                    mutex.unlock();
+                    /*frameCount ++;
+                    if((float)getElapsedSeconds() >= lastTimestamp){
+                        CI_LOG_D("update rate:" << frameCount);
+                        frameCount = 0;
+                        lastTimestamp = (float)getElapsedSeconds() + 1.f;
+                    }*/
+                    //mutex.unlock();
                 }else{
                     app::console() << sensorBytesRead << std::endl;
                 }
@@ -317,17 +317,17 @@ namespace PSVRApi{
         rawData->rawGyroYaw_A        = rawFrame.data[0].gyro.yaw;
         rawData->rawGyroPitch_A      = rawFrame.data[0].gyro.pitch;
 		rawData->rawGyroRoll_A       = rawFrame.data[0].gyro.roll;
-		rawData->rawMotionX_A        = rawFrame.data[0].accel.x;
-		rawData->rawMotionY_A        = rawFrame.data[0].accel.y;
-		rawData->rawMotionZ_A        = rawFrame.data[0].accel.z;
+		rawData->rawMotionX_A        = rawFrame.data[0].accel.x >> 4;
+		rawData->rawMotionY_A        = rawFrame.data[0].accel.y >> 4;
+		rawData->rawMotionZ_A        = rawFrame.data[0].accel.z >> 4;
         //frame 2
         rawData->timeStamp_B         = rawFrame.data[1].timestamp;
         rawData->rawGyroYaw_B        = rawFrame.data[1].gyro.yaw;
         rawData->rawGyroPitch_B      = rawFrame.data[1].gyro.pitch;
 		rawData->rawGyroRoll_B       = rawFrame.data[1].gyro.roll;
-		rawData->rawMotionX_B        = rawFrame.data[1].accel.x;
-        rawData->rawMotionY_B        = rawFrame.data[1].accel.x;
-		rawData->rawMotionZ_B        = rawFrame.data[1].accel.x;
+		rawData->rawMotionX_B        = rawFrame.data[1].accel.x >> 4;
+        rawData->rawMotionY_B        = rawFrame.data[1].accel.y >> 4;
+		rawData->rawMotionZ_B        = rawFrame.data[1].accel.z >> 4;
         //other stuff
 		rawData->calStatus           = rawFrame.calStatus;
 		rawData->ready               = rawFrame.ready;
@@ -383,9 +383,14 @@ namespace PSVRApi{
 	}
 
 	bool PSVRContext::recenterHeadset(){
-        debug("not implemented");
+        BMI055Integrator::Recenter();
 		return true;
 	}
+    
+    bool PSVRContext::recalibrateHeadset(){
+        BMI055Integrator::Recalibrate();
+        return true;
+    }
 
 	bool PSVRContext::turnBreakBoxOff(){
 		PSVRFrame Cmd = { 0x13, 0x00, 0xAA, 4, 0 };
@@ -455,4 +460,48 @@ namespace PSVRApi{
 			return false;
 		return true;
 	}
+    
+    const ci::quat PSVRContext::fixQuat(glm::quat quat){
+        /*quat = glm::normalize(quat);
+        float tmp = quat.x;
+        quat.x = quat.y;
+        quat.y = tmp;
+        return - quat;*/
+        //auto direction = glm::eulerAngles(quat);
+        //return glm::quat(-quat.y,-quat.x,-quat.z,quat.w);
+        
+        //auto euler = glm::eulerAngles(quat);
+        //return glm::quat(glm::vec3(euler.y,euler.x,euler.z));
+        //quat = glm::inverse(quat);
+        
+        /*auto tmp = glm::eulerAngles(quat);
+        auto mat = glm::eulerAngleX(tmp.y) * glm::eulerAngleY(tmp.x) * glm::eulerAngleZ(tmp.z);
+        return glm::quat_cast(mat);*/
+        
+        glm::quat res = glm::quat();
+        
+        //z and x is flipped
+        /*res.x = quat.y;
+        res.y = - quat.x;
+        res.z = quat.z;
+        res.w = - quat.w;*/
+        
+        /*res.x = quat.y;
+        res.y = quat.x;
+        res.z = - quat.z;
+        res.w = quat.w;*/
+        
+        //Levi-Cevita symbol.
+        
+        /*auto tmp = glm::eulerAngles(quat);
+        auto mat = glm::eulerAngleZ(-tmp.z) * glm::eulerAngleX(- tmp.y) * glm::eulerAngleY(tmp.x);
+        return glm::quat_cast(mat);*/
+        
+        return glm::quat_cast(glm::eulerAngleZ((float)M_PI/2.f)) * quat; //* glm::angleAxis((float)M_PI, vec3(0,0,1));
+        //return glm::inverse(res);
+        
+        //return glm::inverse(glm::quat( quat.y, - quat.x, quat.z, - quat.w));
+        //return quat;
+        //return glm::quat( - quat.y, - quat.x, - quat.z, - quat.w);
+    }
 };

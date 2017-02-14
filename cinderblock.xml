@@ -13,6 +13,8 @@
     <headerPattern>include/*.h</headerPattern>
     <source>src/psvrapi.cpp</source>
 	<source>src/psvr.cpp</source>
+	<source>src/BMI055Integrator.cpp</source>
+	<source>src/Madgwick.cpp</source>
 	
 	<platform os="msw">
 		<includePath>lib/libusb/headers</includePath>

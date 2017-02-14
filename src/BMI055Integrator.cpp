@@ -15,7 +15,7 @@ namespace PSVRApi{
     glm::vec3       BMI055Integrator::gravityVector = glm::vec3(0.f);
     glm::vec3       BMI055Integrator::accelOffset   = glm::vec3(0.f);
     glm::vec3       BMI055Integrator::gyroOffset    = glm::vec3(0.f);
-    uint64_t        BMI055Integrator::prevTimestamp = 0;
+    uint32_t        BMI055Integrator::prevTimestamp = 0;
     MadgwickAHRS    BMI055Integrator::fusion        = MadgwickAHRS(glm::quat());
     glm::quat       BMI055Integrator::ZeroPose      = glm::quat();
 
@@ -43,12 +43,12 @@ namespace PSVRApi{
             recalibrate = false;
         }
         
-        auto linearAcceleration1  = ci::vec3(stat->rawMotionX_A * aRes, stat->rawMotionY_A * aRes,   stat->rawMotionZ_A * aRes );
-        auto angularAcceleration1 = ci::vec3(stat->rawGyroYaw_A * gRes, stat->rawGyroPitch_A * gRes, stat->rawGyroRoll_A * gRes);
+        auto linearAcceleration1  = aRes * ci::vec3(stat->rawMotionX_A, stat->rawMotionY_A,   stat->rawMotionZ_A );
+        auto angularAcceleration1 = gRes * ci::vec3(stat->rawGyroYaw_A, stat->rawGyroPitch_A, stat->rawGyroRoll_A);
         Integrate(linearAcceleration1, angularAcceleration1, stat->timeStamp_A);
         
-        auto linearAcceleration2  = ci::vec3(stat->rawMotionX_B * aRes, stat->rawMotionY_B * aRes,   stat->rawMotionZ_B * aRes );
-        auto angularAcceleration2 = ci::vec3(stat->rawGyroYaw_B * gRes, stat->rawGyroPitch_B * gRes, stat->rawGyroRoll_B * gRes);
+        auto linearAcceleration2  = aRes * ci::vec3(stat->rawMotionX_B,   stat->rawMotionY_B, stat->rawMotionZ_B );
+        auto angularAcceleration2 = gRes * ci::vec3(stat->rawGyroYaw_B, stat->rawGyroPitch_B, stat->rawGyroRoll_B);
         return Integrate(linearAcceleration2, angularAcceleration2, stat->timeStamp_B);
 }
 
@@ -84,7 +84,7 @@ float BMI055Integrator::GetAres(AScale Scale) {
 	return 0;
 }
 
-glm::quat BMI055Integrator::Integrate(glm::vec3 linearAcceleration, glm::vec3 angularAcceleration, uint64_t Timestamp) {
+glm::quat BMI055Integrator::Integrate(glm::vec3 linearAcceleration, glm::vec3 angularAcceleration, uint32_t Timestamp) {
 	if (samplesLeft > 0){
 		samplesLeft --;
 		accelOffset += linearAcceleration;
@@ -106,8 +106,7 @@ glm::quat BMI055Integrator::Integrate(glm::vec3 linearAcceleration, glm::vec3 an
 		float interval = 0;
 		if (prevTimestamp > Timestamp)
 			interval = (Timestamp + (0xFFFFFF - prevTimestamp)) / 1000000.0f;
-		else
-			interval = (Timestamp - prevTimestamp) / 1000000.0f;
+		else interval = (Timestamp - prevTimestamp) / 1000000.0f;
 
 		fusion.Update( angularAcceleration.x, angularAcceleration.y, angularAcceleration.z, 
 			           linearAcceleration.x,  linearAcceleration.y,  linearAcceleration.z, 
@@ -180,9 +179,9 @@ glm::vec3 BMI055Integrator::ToEuler(glm::quat *Q) {
 	double sqy = Q->y * Q->y;
 	double sqz = Q->z * Q->z;
 	
-	pitchYawRoll.x = -(float)math<double>::atan2(2.f * Q->x * Q->w + 2.f * Q->y * Q->z, 1 - 2.f * (sqz + sqw)); // Yaw 
-	pitchYawRoll.y = -(float)math<double>::asin(2.f * (Q->x * Q->z - Q->w * Q->y));                             // Pitch 
-	pitchYawRoll.z = (float)math<double>::atan2(2.f * Q->x * Q->y + 2.f * Q->z * Q->w, 1 - 2.f * (sqy + sqz));  // Roll 
+	pitchYawRoll.x = - (float)math<double>::atan2(2.f * Q->x * Q->w + 2.f * Q->y * Q->z, 1 - 2.f * (sqz + sqw)); // Yaw
+	pitchYawRoll.y = - (float)math<double>::asin (2.f * (Q->x * Q->z - Q->w * Q->y));                            // Pitch
+	pitchYawRoll.z = + (float)math<double>::atan2(2.f * Q->x * Q->y + 2.f * Q->z * Q->w, 1 - 2.f * (sqy + sqz)); // Roll
 
 	return pitchYawRoll;
 }

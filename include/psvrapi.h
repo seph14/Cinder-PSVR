@@ -19,6 +19,9 @@
 
 #include <memory>
 
+//on mac you need this:
+//sudo kextunload -b com.apple.driver.usb.IOUSBHostHIDDevice
+
 // Get rid of annoying zero length structure warnings from libusb.h in MSVC
 
 #ifdef _MSC_VER
@@ -146,56 +149,7 @@ namespace PSVRApi{
         byte                  calStatus;
         byte                  ready;
         byte                  u_b04[3];
-        
-        /*
-		byte                  timeStampA1;
-		byte                  timeStampA2;
-		byte                  timeStampA3;
-		byte                  timeStampA4;
-
-		byte                  rawGyroYaw_AL;
-		byte                  rawGyroYaw_AH;
-
-		byte                  rawGyroPitch_AL;
-		byte                  rawGyroPitch_AH;
-
-		byte                  rawGyroRoll_AL;
-		byte                  rawGyroRoll_AH;
-
-		byte                  rawMotionX_AL;
-		byte                  rawMotionX_AH;
-
-		byte                  rawMotionY_AL;
-		byte                  rawMotionY_AH;
-
-		byte                  rawMotionZ_AL;
-		byte                  rawMotionZ_AH;        // 32 bytes
-
-		byte                  timeStamp_B1;
-		byte                  timeStamp_B2;
-		byte                  timeStamp_B3;
-		byte                  timeStamp_B4;
-
-		byte                  rawGyroYaw_BL;
-		byte                  rawGyroYaw_BH;
-
-		byte                  rawGyroPitch_BL;
-		byte                  rawGyroPitch_BH;
-
-		byte                  rawGyroRoll_BL;
-		byte                  rawGyroRoll_BH;
-
-		byte                  rawMotionX_BL;
-		byte                  rawMotionX_BH;
-
-		byte                  rawMotionY_BL;
-		byte                  rawMotionY_BH;
-
-		byte                  rawMotionZ_BL;
-		byte                  rawMotionZ_BH;
-*/
-
-		byte                  voltageValue;
+        byte                  voltageValue;
 		byte                  voltageReference;
 		int16_t               irSensor;
 
@@ -220,25 +174,25 @@ namespace PSVRApi{
 		bool                      isMicMuted;
 		bool                      earphonesConnected;
 
-		int                       timeStamp_A;
+		uint32_t                  timeStamp_A;
 
-		int                       rawGyroYaw_A;
-		int                       rawGyroPitch_A;
-		int                       rawGyroRoll_A;
+		int16_t                       rawGyroYaw_A;
+		int16_t                       rawGyroPitch_A;
+		int16_t                       rawGyroRoll_A;
 
-		int                       rawMotionX_A;
-		int                       rawMotionY_A;
-		int                       rawMotionZ_A;
+		int16_t                       rawMotionX_A;
+		int16_t                       rawMotionY_A;
+		int16_t                       rawMotionZ_A;
 
-		int                       timeStamp_B;
+		uint32_t                  timeStamp_B;
 
-		int                       rawGyroYaw_B;
-		int                       rawGyroPitch_B;
-		int                       rawGyroRoll_B;
+		int16_t                       rawGyroYaw_B;
+		int16_t                       rawGyroPitch_B;
+		int16_t                       rawGyroRoll_B;
 
-		int                       rawMotionX_B;
-		int                       rawMotionY_B;
-		int                       rawMotionZ_B;
+		int16_t                       rawMotionX_B;
+		int16_t                       rawMotionY_B;
+		int16_t                       rawMotionZ_B;
 
 		byte                      calStatus;
 		byte                      ready;
@@ -288,9 +242,11 @@ namespace PSVRApi{
         
         bool enableCinematicMode();
         bool enableCinematicMode(byte distance, byte size, byte brightness, byte micVolume);
-        
-        /*not implemented*/
         bool recenterHeadset();
+        bool recalibrateHeadset();
+        
+        /*interface for ci-vr*/
+        void getRecommendedRenderTargetSize(uint32_t *width, uint32_t *height) { *width = 960; *height = 1080; }
         
         bool turnBreakBoxOff();
         bool turnBreakBoxOn();
@@ -333,6 +289,7 @@ namespace PSVRApi{
         void sensorProcess();
         
         void controllerProcess();
+        const ci::quat fixQuat    (glm::quat quat);
         
         void processSensorFrame   (PSVRSensorFrame rawFrame, PSVRSensorData *rawData);
         void processControlFrame  (PSVRFrame frame);

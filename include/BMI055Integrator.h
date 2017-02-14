@@ -43,7 +43,7 @@ namespace PSVRApi{
 		static glm::vec3 gyroOffset;
 
 		static int       samplesLeft;
-		static uint64_t  prevTimestamp;
+		static uint32_t  prevTimestamp;
 
 		static MadgwickAHRS fusion;
 		static glm::quat ZeroPose;
@@ -51,6 +51,6 @@ namespace PSVRApi{
 		static bool recalibrate;
 		static bool recenter;
 
-		static glm::quat Integrate(glm::vec3 linearAcceleration, glm::vec3 angularAcceleration, uint64_t Timestamp);
+		static glm::quat Integrate(glm::vec3 linearAcceleration, glm::vec3 angularAcceleration, uint32_t Timestamp);
 	};
 }

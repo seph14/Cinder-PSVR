@@ -43,7 +43,7 @@ namespace PSVRApi{
         s2 = _4q2 * q4q4 - _2q4 * ax + 4.f * q1q1 * q2 - _2q1 * ay - _4q2 + _8q2 * q2q2 + _8q2 * q3q3 + _4q2 * az;
         s3 = 4.f * q1q1 * q3 + _2q1 * ax + _4q3 * q4q4 - _2q4 * ay - _4q3 + _8q3 * q2q2 + _8q3 * q3q3 + _4q3 * az;
         s4 = 4.f * q2q2 * q4 - _2q2 * ax + 4.f * q3q3 * q4 - _2q3 * ay;
-        norm = 1.f / glm::sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
+        norm = glm::inversesqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4);    // normalise step magnitude
         s1 *= norm;
         s2 *= norm;
         s3 *= norm;
@@ -60,7 +60,7 @@ namespace PSVRApi{
         q2 += qDot2 * SamplePeriod;
         q3 += qDot3 * SamplePeriod;
         q4 += qDot4 * SamplePeriod;
-        norm = 1.f / glm::sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
+        norm = glm::inversesqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
         Quaternion.w = q1 * norm;
         Quaternion.x = q2 * norm;
         Quaternion.y = q3 * norm;

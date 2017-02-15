@@ -256,7 +256,7 @@
 		8D77B3DA1E54DAAD001078E0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_PREFIX = "";
 				OTHER_LDFLAGS = (
 					../../../lib/libcinder_d.a,
 					"../lib/maxosc/libusb-1.0.0.dylib",
@@ -268,7 +268,7 @@
 		8D77B3DB1E54DAAD001078E0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_PREFIX = "";
 				OTHER_LDFLAGS = (
 					../../../lib/libcinder.a,
 					"../lib/maxosx/libusb-1.0.0.dylib",

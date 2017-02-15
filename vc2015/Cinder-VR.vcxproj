@@ -81,10 +81,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>..\lib\msw\$(PlatformTarget)\</OutDir>
-    <TargetName>cinder-vr-$(PlatformToolset)_d</TargetName>
+    <TargetName>cinder-psvr-$(PlatformToolset)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>cinder-vr-$(PlatformToolset)_d</TargetName>
+    <TargetName>cinder-psvr-$(PlatformToolset)_d</TargetName>
     <OutDir>..\lib\msw\$(PlatformTarget)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

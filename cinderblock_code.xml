@@ -9,18 +9,19 @@
 	url="https://github.com/seph14/Cinder-PSVR.git"
 	git="git://github.com/seph14/Cinder-PSVR.git"
 	>
-	<supports os="msw" />
-	<supports os="macosx" />
 	<includePath>include</includePath>
+    <headerPattern>include/*.h</headerPattern>
+    <source>src/psvrapi.cpp</source>
 	<source>src/psvr.cpp</source>
+	<source>src/BMI055Integrator.cpp</source>
+	<source>src/Madgwick.cpp</source>
 	
 	<platform os="msw">
-		<staticLibrary>lib/msw/$(PlatformTarget)/cinder-psvr-$(PlatformToolset).lib</staticLibrary>
-		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-$(PlatformToolset).lib</staticLibrary>
+		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-1.0.lib</staticLibrary>
 	</platform>
 	<platform os="macosx">
-		<dynamicLibrary>lib/macosx/cinder-psvr.dylib</dynamicLibrary>
-		<buildCopy>lib/macosx/cinder-psvr.dylib</buildCopy>
+		<dynamicLibrary>lib/macosx/libusb-1.0.0.dylib</dynamicLibrary>
+		<buildCopy>lib/macosx/libusb-1.0.0.dylib</buildCopy>
 	</platform>
 </block>
 </cinder>

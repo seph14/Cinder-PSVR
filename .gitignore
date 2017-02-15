@@ -6,3 +6,5 @@ vc2015/Debug/
 vc2015/x64/
 vc2015/Cinder-VR.VC.db
 vc2015/Cinder-PSVR.VC.db
+cinder-psvr/build/cinder-psvr.build/*
+cinder-psvr/cinder-psvr.xcodeproj/project.xcworkspace/xcshareddata/cinder-psvr.xcscmblueprint

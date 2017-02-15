@@ -19,7 +19,7 @@
 		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-$(PlatformToolset).lib</staticLibrary>
 	</platform>
 	<platform os="macosx">
-		<dynamicLibrary>lib/macosx/cinder-psvr.dylib</dynamicLibrary>
+		<dynamicLibrary>lib/macosx/cinder-psvr.a</dynamicLibrary>
 		<buildCopy>lib/macosx/cinder-psvr.dylib</buildCopy>
 	</platform>
 </block>

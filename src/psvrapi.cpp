@@ -425,7 +425,7 @@ namespace PSVRApi{
 
     bool PSVRContext::setLED(PSVR_LEDMASK mask, byte brightness){
         //forget where I read this but the maximum number for led brightess is 100 = 0x64
-        brightness = min(brightness, 0x64);
+        brightness = ci::math<byte>::min(brightness, 0x64);
         PSVRFrame Cmd = { 0x15, 0x00, 0xAA, 16, (byte)(mask & 0xFF), (byte)((mask >> 8) & 0xFF),
             brightness, brightness, brightness, brightness, brightness, brightness, brightness, brightness, brightness, 0, 0, 0, 0, 0 };
         return SendCommand(&Cmd);
@@ -433,15 +433,15 @@ namespace PSVRApi{
     
     bool PSVRContext::setLED(PSVR_LEDMASK mask, byte valueA, byte valueB, byte valueC, byte valueD, byte valueE, byte valueF, byte valueG, byte valueH, byte valueI){
         //somehow ci::math<byte>::min gives build error on visual studio
-		valueA = min(valueA, 0x64);
-        valueB = min(valueB, 0x64);
-        valueC = min(valueC, 0x64);
-        valueD = min(valueD, 0x64);
-        valueE = min(valueE, 0x64);
-        valueF = min(valueF, 0x64);
-        valueG = min(valueG, 0x64);
-        valueH = min(valueH, 0x64);
-        valueI = min(valueI, 0x64);
+		valueA = ci::math<byte>::min(valueA, 0x64);
+        valueB = ci::math<byte>::min(valueB, 0x64);
+        valueC = ci::math<byte>::min(valueC, 0x64);
+        valueD = ci::math<byte>::min(valueD, 0x64);
+        valueE = ci::math<byte>::min(valueE, 0x64);
+        valueF = ci::math<byte>::min(valueF, 0x64);
+        valueG = ci::math<byte>::min(valueG, 0x64);
+        valueH = ci::math<byte>::min(valueH, 0x64);
+        valueI = ci::math<byte>::min(valueI, 0x64);
         PSVRFrame Cmd = { 0x15, 0x00, 0xAA, 16, (byte)(mask & 0xFF), (byte)((mask >> 8) & 0xFF),
             valueA, valueB, valueC, valueD, valueE, valueF, valueG, valueH, valueI, 0, 0, 0, 0, 0 };
         return SendCommand(&Cmd);

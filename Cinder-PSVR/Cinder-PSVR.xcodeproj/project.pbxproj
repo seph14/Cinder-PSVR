@@ -1,0 +1,304 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8D77B3F11E54E207001078E0 /* BMI055Integrator.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D77B3F01E54E207001078E0 /* BMI055Integrator.h */; };
+		8D77B3F61E54E215001078E0 /* libusb.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D77B3F21E54E215001078E0 /* libusb.h */; };
+		8D77B3F71E54E215001078E0 /* Madgwick.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D77B3F31E54E215001078E0 /* Madgwick.h */; };
+		8D77B3F91E54E215001078E0 /* psvrapi.h in Headers */ = {isa = PBXBuildFile; fileRef = 8D77B3F51E54E215001078E0 /* psvrapi.h */; };
+		8D77B3FE1E54E231001078E0 /* BMI055Integrator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8D77B3FA1E54E231001078E0 /* BMI055Integrator.cpp */; };
+		8D77B3FF1E54E231001078E0 /* Madgwick.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8D77B3FB1E54E231001078E0 /* Madgwick.cpp */; };
+		8D77B4011E54E231001078E0 /* psvrapi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8D77B3FD1E54E231001078E0 /* psvrapi.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		8D77B3D51E54DAAD001078E0 /* libcinder-psvr_d.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libcinder-psvr_d.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D77B3F01E54E207001078E0 /* BMI055Integrator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BMI055Integrator.h; path = ../include/BMI055Integrator.h; sourceTree = "<group>"; };
+		8D77B3F21E54E215001078E0 /* libusb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libusb.h; path = ../include/libusb.h; sourceTree = "<group>"; };
+		8D77B3F31E54E215001078E0 /* Madgwick.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Madgwick.h; path = ../include/Madgwick.h; sourceTree = "<group>"; };
+		8D77B3F51E54E215001078E0 /* psvrapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = psvrapi.h; path = ../include/psvrapi.h; sourceTree = "<group>"; };
+		8D77B3FA1E54E231001078E0 /* BMI055Integrator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BMI055Integrator.cpp; path = ../src/BMI055Integrator.cpp; sourceTree = "<group>"; };
+		8D77B3FB1E54E231001078E0 /* Madgwick.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Madgwick.cpp; path = ../src/Madgwick.cpp; sourceTree = "<group>"; };
+		8D77B3FD1E54E231001078E0 /* psvrapi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = psvrapi.cpp; path = ../src/psvrapi.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D77B3D21E54DAAD001078E0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		8D77B3CC1E54DAAD001078E0 = {
+			isa = PBXGroup;
+			children = (
+				8D77B3D61E54DAAD001078E0 /* Products */,
+				8D77B3DC1E54E0A0001078E0 /* include */,
+				8D77B3DD1E54E0A7001078E0 /* src */,
+			);
+			sourceTree = "<group>";
+		};
+		8D77B3D61E54DAAD001078E0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D77B3D51E54DAAD001078E0 /* libcinder-psvr_d.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8D77B3DC1E54E0A0001078E0 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				8D77B3F21E54E215001078E0 /* libusb.h */,
+				8D77B3F31E54E215001078E0 /* Madgwick.h */,
+				8D77B3F51E54E215001078E0 /* psvrapi.h */,
+				8D77B3F01E54E207001078E0 /* BMI055Integrator.h */,
+			);
+			name = include;
+			sourceTree = "<group>";
+		};
+		8D77B3DD1E54E0A7001078E0 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				8D77B3FA1E54E231001078E0 /* BMI055Integrator.cpp */,
+				8D77B3FB1E54E231001078E0 /* Madgwick.cpp */,
+				8D77B3FD1E54E231001078E0 /* psvrapi.cpp */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		8D77B3D31E54DAAD001078E0 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D77B3F11E54E207001078E0 /* BMI055Integrator.h in Headers */,
+				8D77B3F61E54E215001078E0 /* libusb.h in Headers */,
+				8D77B3F71E54E215001078E0 /* Madgwick.h in Headers */,
+				8D77B3F91E54E215001078E0 /* psvrapi.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		8D77B3D41E54DAAD001078E0 /* cinder-psvr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8D77B3D91E54DAAD001078E0 /* Build configuration list for PBXNativeTarget "cinder-psvr" */;
+			buildPhases = (
+				8D77B3D11E54DAAD001078E0 /* Sources */,
+				8D77B3D21E54DAAD001078E0 /* Frameworks */,
+				8D77B3D31E54DAAD001078E0 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "cinder-psvr";
+			productName = "cinder-psvr";
+			productReference = 8D77B3D51E54DAAD001078E0 /* libcinder-psvr_d.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8D77B3CD1E54DAAD001078E0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0810;
+				ORGANIZATIONNAME = "Seph Li";
+				TargetAttributes = {
+					8D77B3D41E54DAAD001078E0 = {
+						CreatedOnToolsVersion = 8.1;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 8D77B3D01E54DAAD001078E0 /* Build configuration list for PBXProject "cinder-psvr" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 8D77B3CC1E54DAAD001078E0;
+			productRefGroup = 8D77B3D61E54DAAD001078E0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D77B3D41E54DAAD001078E0 /* cinder-psvr */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D77B3D11E54DAAD001078E0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D77B3FF1E54E231001078E0 /* Madgwick.cpp in Sources */,
+				8D77B4011E54E231001078E0 /* psvrapi.cpp in Sources */,
+				8D77B3FE1E54E231001078E0 /* BMI055Integrator.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		8D77B3D71E54DAAD001078E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES_NONAGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = NO;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = NO;
+				CLANG_WARN_CONSTANT_CONVERSION = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_EMPTY_BODY = NO;
+				CLANG_WARN_ENUM_CONVERSION = NO;
+				CLANG_WARN_INFINITE_RECURSION = NO;
+				CLANG_WARN_INT_CONVERSION = NO;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = NO;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = NO;
+				CODE_SIGN_IDENTITY = "";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = NO;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../../include;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = build/;
+				ONLY_ACTIVE_ARCH = NO;
+				SDKROOT = macosx;
+				SYMROOT = ../lib/macosx;
+				USER_HEADER_SEARCH_PATHS = ../../../include;
+			};
+			name = Debug;
+		};
+		8D77B3D81E54DAAD001078E0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES_NONAGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = NO;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = NO;
+				CLANG_WARN_CONSTANT_CONVERSION = NO;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_EMPTY_BODY = NO;
+				CLANG_WARN_ENUM_CONVERSION = NO;
+				CLANG_WARN_INFINITE_RECURSION = NO;
+				CLANG_WARN_INT_CONVERSION = NO;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = NO;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = NO;
+				CODE_SIGN_IDENTITY = "";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_NO_COMMON_BLOCKS = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../../../include;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = build/;
+				SDKROOT = macosx;
+				SYMROOT = ../lib/macosx;
+				USER_HEADER_SEARCH_PATHS = ../../../include;
+			};
+			name = Release;
+		};
+		8D77B3DA1E54DAAD001078E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				OTHER_LDFLAGS = (
+					../../../lib/libcinder_d.a,
+					"../lib/maxosc/libusb-1.0.0.dylib",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)_d";
+			};
+			name = Debug;
+		};
+		8D77B3DB1E54DAAD001078E0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				OTHER_LDFLAGS = (
+					../../../lib/libcinder.a,
+					"../lib/maxosx/libusb-1.0.0.dylib",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8D77B3D01E54DAAD001078E0 /* Build configuration list for PBXProject "cinder-psvr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D77B3D71E54DAAD001078E0 /* Debug */,
+				8D77B3D81E54DAAD001078E0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8D77B3D91E54DAAD001078E0 /* Build configuration list for PBXNativeTarget "cinder-psvr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8D77B3DA1E54DAAD001078E0 /* Debug */,
+				8D77B3DB1E54DAAD001078E0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8D77B3CD1E54DAAD001078E0 /* Project object */;
+}

@@ -20,7 +20,9 @@
 	</platform>
 	<platform os="macosx">
 		<dynamicLibrary>lib/macosx/cinder-psvr.a</dynamicLibrary>
-		<buildCopy>lib/macosx/cinder-psvr.dylib</buildCopy>
+		<buildCopy>lib/macosx/cinder-psvr.a</buildCopy>
+		<dynamicLibrary>lib/macosx/libusb-1.0.0.dylib</dynamicLibrary>
+		<buildCopy>lib/macosx/libusb-1.0.0.dylib</buildCopy>
 	</platform>
 </block>
 </cinder>

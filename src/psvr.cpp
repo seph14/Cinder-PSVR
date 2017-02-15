@@ -1,3 +1,19 @@
+/*
+ Copyright (c) 2016-2017, Seph Li - All rights reserved.
+ This code is intended for use with the Cinder C++ library: http://libcinder.org
+ This file is part of Cinder-PSVR.
+ Cinder-PSVR is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ Cinder-PSVR is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+ along with Cinder-PSVR.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "psvr.h"
 
 using namespace std;
@@ -57,7 +73,7 @@ namespace psvr {
 		app::console() << "Unsolicited: report:" << (int)reportId << ", result:" << (int)result << ", message:" << message << endl;
 	}
     
-    void PSVR::rotationUpdate(ci::quat quat, ci::vec3 dir){
+    void PSVR::rotationUpdate(glm::quat quat, glm::vec3 dir){
         mQuat = quat;
         mDirection = dir;
     }

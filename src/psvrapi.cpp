@@ -1,3 +1,19 @@
+/*
+ Copyright (c) 2016-2017, Seph Li - All rights reserved.
+ This code is intended for use with the Cinder C++ library: http://libcinder.org
+ This file is part of Cinder-PSVR.
+ Cinder-PSVR is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ Cinder-PSVR is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+ along with Cinder-PSVR.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "psvrapi.h"
 #include "cinder/app/App.h"
 #include "cinder/Utilities.h"
@@ -409,22 +425,23 @@ namespace PSVRApi{
 
     bool PSVRContext::setLED(PSVR_LEDMASK mask, byte brightness){
         //forget where I read this but the maximum number for led brightess is 100 = 0x64
-        brightness = ci::math<byte>::min(brightness, 0x64);
+        brightness = min(brightness, 0x64);
         PSVRFrame Cmd = { 0x15, 0x00, 0xAA, 16, (byte)(mask & 0xFF), (byte)((mask >> 8) & 0xFF),
             brightness, brightness, brightness, brightness, brightness, brightness, brightness, brightness, brightness, 0, 0, 0, 0, 0 };
         return SendCommand(&Cmd);
     }
     
     bool PSVRContext::setLED(PSVR_LEDMASK mask, byte valueA, byte valueB, byte valueC, byte valueD, byte valueE, byte valueF, byte valueG, byte valueH, byte valueI){
-        valueA = ci::math<byte>::min(valueA, 0x64);
-        valueB = ci::math<byte>::min(valueB, 0x64);
-        valueC = ci::math<byte>::min(valueC, 0x64);
-        valueD = ci::math<byte>::min(valueD, 0x64);
-        valueE = ci::math<byte>::min(valueE, 0x64);
-        valueF = ci::math<byte>::min(valueF, 0x64);
-        valueG = ci::math<byte>::min(valueG, 0x64);
-        valueH = ci::math<byte>::min(valueH, 0x64);
-        valueI = ci::math<byte>::min(valueI, 0x64);
+        //somehow ci::math<byte>::min gives build error on visual studio
+		valueA = min(valueA, 0x64);
+        valueB = min(valueB, 0x64);
+        valueC = min(valueC, 0x64);
+        valueD = min(valueD, 0x64);
+        valueE = min(valueE, 0x64);
+        valueF = min(valueF, 0x64);
+        valueG = min(valueG, 0x64);
+        valueH = min(valueH, 0x64);
+        valueI = min(valueI, 0x64);
         PSVRFrame Cmd = { 0x15, 0x00, 0xAA, 16, (byte)(mask & 0xFF), (byte)((mask >> 8) & 0xFF),
             valueA, valueB, valueC, valueD, valueE, valueF, valueG, valueH, valueI, 0, 0, 0, 0, 0 };
         return SendCommand(&Cmd);
@@ -461,7 +478,7 @@ namespace PSVRApi{
 		return true;
 	}
     
-    const ci::quat PSVRContext::fixQuat(glm::quat quat){
+    const glm::quat PSVRContext::fixQuat(glm::quat quat){
         //cant figure out the math to swap x and y axis in quaternion, doing with euler angles
         auto tmp = glm::eulerAngles(quat);
         return glm::normalize(glm::quat_cast(glm::eulerAngleYXZ(-tmp.x, -tmp.y, -tmp.z)));

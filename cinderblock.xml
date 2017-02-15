@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <cinder>
 <block
-	name="PSVR"
-	id="org.libcinder.psvr"
-	author=""
-	license=""
-	summary=""
-	url="https://github.com/cinder/Cinder-VR"
-	git="git://github.com/cinder/Cinder-VR.git"
+	name="Cinder-PSVR"
+	id="com.solid-jellyfish.psvr"
+	author="seph li"
+	license="GPL, Commercial"
+	summary="A Cinder block that enables you to connect to PlaystationVR headset and read the fused gyro sensor data."
+	url="https://github.com/seph14/Cinder-PSVR.git"
+	git="git://github.com/seph14/Cinder-PSVR.git"
 	>
 	<includePath>include</includePath>
     <headerPattern>include/*.h</headerPattern>
@@ -17,7 +17,6 @@
 	<source>src/Madgwick.cpp</source>
 	
 	<platform os="msw">
-		<includePath>lib/libusb/headers</includePath>
 		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-1.0.lib</staticLibrary>
 	</platform>
 	<platform os="macosx">

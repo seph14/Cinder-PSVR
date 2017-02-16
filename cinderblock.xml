@@ -15,8 +15,14 @@
 	<source>src/psvr.cpp</source>
 	
 	<platform os="msw">
-		<staticLibrary>lib/msw/$(PlatformTarget)/cinder-psvr-$(PlatformToolset).lib</staticLibrary>
-		<staticLibrary>lib/msw/$(PlatformTarget)/libusb-$(PlatformToolset).lib</staticLibrary>
+		<platform config="debug">
+			<staticLibrary>lib/msw/$(PlatformTarget)/cinder-psvr-$(PlatformToolset)_d.lib</staticLibrary>
+			<staticLibrary>lib/msw/$(PlatformTarget)/libusb-$(PlatformToolset)_d.lib</staticLibrary>
+		</platform>
+		<platform config="release">
+			<staticLibrary>lib/msw/$(PlatformTarget)/cinder-psvr-$(PlatformToolset).lib</staticLibrary>
+			<staticLibrary>lib/msw/$(PlatformTarget)/libusb-$(PlatformToolset).lib</staticLibrary>
+		</platform>
 	</platform>
 	<platform os="macosx">
 		<platform config="debug">

@@ -14,6 +14,9 @@
  along with Cinder-PSVR.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#define NOMINMAX
+
 #include "psvrapi.h"
 #include "cinder/app/App.h"
 #include "cinder/Utilities.h"
